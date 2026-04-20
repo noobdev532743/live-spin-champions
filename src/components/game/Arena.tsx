@@ -77,9 +77,14 @@ export function Arena() {
               height={56}
               className={hit ? "animate-shake" : ""}
               style={{
-                width: "100%", height: "100%", objectFit: "contain",
-                animation: a.alive ? `spin-fast ${Math.max(0.15, 1.4 / a.spin)}s linear infinite` : undefined,
-                filter: "drop-shadow(0 4px 6px rgba(0,0,0,.3))",
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                borderRadius: "9999px",
+                border: "3px solid white",
+                background: "white",
+                animation: a.alive ? `spin-fast ${Math.max(0.25, 2 / a.spin)}s linear infinite` : undefined,
+                boxShadow: "0 4px 10px rgba(0,0,0,.35), inset 0 -3px 0 rgba(0,0,0,.15)",
               }}
             />
             {/* HP bar */}

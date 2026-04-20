@@ -4,7 +4,8 @@ export interface ViewerEvent {
   id: string;
   username: string;
   action: ActionType;
-  targetId?: string; // avatar id
+  avatarUrl?: string; // viewer profile pic
+  targetId?: string;
   giftValue?: number;
   ts: number;
 }
