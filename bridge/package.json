@@ -1,0 +1,12 @@
+{
+  "name": "spinstars-tiktok-bridge",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Local bridge that connects to TikTok Live and forwards events to your Spin Stars game.",
+  "scripts": {
+    "start": "node tiktok-bridge.mjs"
+  },
+  "dependencies": {
+    "tiktok-live-connector": "^1.2.4"
+  }
+}
