@@ -1,6 +1,6 @@
 import type { Avatar, GameState, ViewerEvent, Obstacle, ActionType } from "./types";
 
-export const ARENA = { w: 360, h: 360, cx: 180, cy: 180, r: 170 };
+export const ARENA = { w: 500, h: 500, cx: 250, cy: 250, r: 240 };
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
