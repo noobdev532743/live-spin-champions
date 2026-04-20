@@ -13,6 +13,7 @@ interface GameStore {
   setSpinMul: (v: number) => void;
   setBounceMul: (v: number) => void;
   setTiktokUsername: (u: string) => void;
+  setArmed: (a: boolean) => void;
 }
 
 // Start with 2 "house" champions so the arena isn't empty before viewers join
@@ -37,6 +38,7 @@ function saveSettings(s: GameState) {
       duration: s.duration,
       settings: s.settings,
       tiktokUsername: s.tiktokUsername,
+      armed: s.armed,
     }));
   } catch { /* ignore */ }
 }
@@ -48,6 +50,7 @@ function makeInitial(): GameState {
     if (typeof saved.duration === "number") s.duration = saved.duration;
     if (saved.settings) s.settings = { ...s.settings, ...saved.settings };
     if (typeof saved.tiktokUsername === "string") s.tiktokUsername = saved.tiktokUsername;
+    if (typeof saved.armed === "boolean") s.armed = saved.armed;
   }
   return s;
 }
@@ -68,6 +71,7 @@ export const useGame = create<GameStore>((set, get) => ({
     ns.duration = s.state.duration;
     ns.settings = { ...s.state.settings };
     ns.tiktokUsername = s.state.tiktokUsername;
+    ns.armed = s.state.armed;
     return { state: ns, queue: [] };
   }),
   tick: (dt) => {
@@ -93,6 +97,11 @@ export const useGame = create<GameStore>((set, get) => ({
   }),
   setTiktokUsername: (u) => set((s) => {
     const ns = { ...s.state, tiktokUsername: u };
+    saveSettings(ns);
+    return { state: ns };
+  }),
+  setArmed: (a) => set((s) => {
+    const ns = { ...s.state, armed: a };
     saveSettings(ns);
     return { state: ns };
   }),
