@@ -222,16 +222,19 @@ export function step(state: GameState, dt: number) {
   }
   state.obstacles = state.obstacles.filter((o) => now - o.bornAt < o.ttl);
 
+  const spinMul = state.settings.spinMul;
+  const bounceMul = state.settings.bounceMul;
+
   // movement
   for (const a of state.avatars) {
     if (!a.alive) continue;
-    a.x += a.vx * dt * 0.6; // slower world
-    a.y += a.vy * dt * 0.6;
+    a.x += a.vx * dt * 0.6 * spinMul;
+    a.y += a.vy * dt * 0.6 * spinMul;
     a.vx *= 0.99;
     a.vy *= 0.99;
     const wobbleAng = now * 0.0008 + (parseInt(a.id, 36) % 7);
-    a.vx += Math.cos(wobbleAng) * a.spin * 0.18 * dt;
-    a.vy += Math.sin(wobbleAng) * a.spin * 0.18 * dt;
+    a.vx += Math.cos(wobbleAng) * a.spin * 0.18 * dt * spinMul;
+    a.vy += Math.sin(wobbleAng) * a.spin * 0.18 * dt * spinMul;
 
     const dx = a.x - ARENA.cx,
       dy = a.y - ARENA.cy;
