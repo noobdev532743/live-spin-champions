@@ -32,9 +32,20 @@ function normalize(raw: any, urlAction?: string | null, urlUser?: string | null)
     raw?.diamondCount ?? raw?.giftValue ?? 0
   ) || undefined;
 
+  const avatarUrl = String(
+    data?.profilePictureUrl ?? data?.avatarUrl ?? data?.user?.profilePictureUrl ??
+    raw?.profilePictureUrl ?? raw?.avatarUrl ?? ""
+  ) || undefined;
+
+  const nickname = String(
+    data?.nickname ?? data?.user?.nickname ?? raw?.nickname ?? ""
+  ) || undefined;
+
   return {
     id: Math.random().toString(36).slice(2),
     username: username || "anon",
+    nickname,
+    avatarUrl,
     action: action as Action,
     giftValue,
     ts: Date.now(),

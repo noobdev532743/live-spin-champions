@@ -205,6 +205,28 @@ function Relay() {
           )}
         </section>
 
+        {/* Node bridge — recommended free path */}
+        <section className="rounded-2xl bg-card p-4 shadow-clay space-y-3 border-2 border-mint/60">
+          <h2 className="font-display font-bold">🟢 Alternatif gratis: TikTokLive Node bridge</h2>
+          <p className="text-xs text-muted-foreground">
+            Script Node.js kecil yang baca TikTok Live kamu langsung & POST ke server kita. <b>Tidak kena reCAPTCHA</b>, gratis selamanya, open source.
+          </p>
+          <ol className="text-xs space-y-1.5 list-decimal pl-4">
+            <li>Install <a href="https://nodejs.org/" target="_blank" rel="noreferrer" className="underline font-bold text-primary">Node.js 18+</a> di PC kamu.</li>
+            <li>Download folder <code className="bg-muted px-1 rounded">bridge/</code> dari project ini (atau clone repo).</li>
+            <li>Buka terminal di folder itu lalu jalankan:</li>
+          </ol>
+          <code className="block text-[11px] bg-muted rounded-lg p-2 break-all font-mono select-all whitespace-pre">{`cd bridge
+npm install
+TIKTOK_USERNAME=${cleanUsername || "username_kamu"} npm start`}</code>
+          <p className="text-[11px] text-muted-foreground">
+            Mulai TikTok Live kamu dulu, lalu jalankan script. Setiap follow/like/share/gift langsung spawn spinner dengan foto profil asli viewer.
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            Detail lengkap & troubleshooting ada di <code className="bg-muted px-1 rounded">bridge/README.md</code>.
+          </p>
+        </section>
+
         {/* Auto-bridge — experimental */}
         <section className="rounded-2xl bg-card p-4 shadow-clay space-y-3">
           <div className="flex items-center justify-between">
