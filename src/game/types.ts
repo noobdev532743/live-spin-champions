@@ -106,4 +106,5 @@ export interface GameState {
     bounceMul: number;  // 0.2..2 — scales collision impulse
   };
   tiktokUsername?: string;
+  armed?: boolean;
 }
