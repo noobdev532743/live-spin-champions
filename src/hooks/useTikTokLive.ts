@@ -63,8 +63,15 @@ export function useTikTokLive({ username, enabled, bridgeUrl = DEFAULT_BRIDGE, o
     });
 
     socket.on("tiktokDisconnected", (msg: string) => {
-      setStatus("disconnected");
-      onLogRef.current?.(`🔴 bridge disconnected: ${msg ?? "unknown"}`);
+      setStatus("error");
+      const m = String(msg ?? "");
+      if (/recaptcha/i.test(m)) {
+        setError("Public bridge sedang di-rate-limit oleh TikTok (reCAPTCHA). Pakai TikFinity di PC sebagai gantinya.");
+        onLogRef.current?.(`🚫 bridge ditolak TikTok (reCAPTCHA). Gunakan TikFinity di PC — lihat panduan di bawah.`);
+      } else {
+        setError(m || "disconnected");
+        onLogRef.current?.(`🔴 bridge disconnected: ${m || "unknown"}`);
+      }
     });
 
     socket.on("disconnect", () => {
