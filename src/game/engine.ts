@@ -1,12 +1,24 @@
-import type { Avatar, GameState, ViewerEvent, FloatingText, Obstacle, MiniChallenge, ActionType } from "./types";
+import type { Avatar, GameState, ViewerEvent, Obstacle, ActionType } from "./types";
 
 export const ARENA = { w: 360, h: 360, cx: 180, cy: 180, r: 170 };
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-export function createAvatar(opts: { name: string; sprite: string; owner?: string; team?: "pink" | "blue"; angle?: number }): Avatar {
+// Generate a profile pic from a username (deterministic)
+export function profilePicFor(username: string, customUrl?: string) {
+  if (customUrl) return customUrl;
+  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(username)}&backgroundType=gradientLinear`;
+}
+
+export function createAvatar(opts: {
+  name: string;
+  sprite: string;
+  owner?: string;
+  team?: "pink" | "blue";
+  angle?: number;
+}): Avatar {
   const a = opts.angle ?? Math.random() * Math.PI * 2;
-  const dist = ARENA.r * 0.55;
+  const dist = ARENA.r * (0.3 + Math.random() * 0.4);
   return {
     id: uid(),
     name: opts.name,
@@ -15,13 +27,13 @@ export function createAvatar(opts: { name: string; sprite: string; owner?: strin
     team: opts.team,
     x: ARENA.cx + Math.cos(a) * dist,
     y: ARENA.cy + Math.sin(a) * dist,
-    vx: Math.cos(a + Math.PI / 2) * 30,
-    vy: Math.sin(a + Math.PI / 2) * 30,
-    spin: 8,
-    maxSpin: 14,
-    shield: 0,
+    vx: Math.cos(a + Math.PI / 2) * 18,
+    vy: Math.sin(a + Math.PI / 2) * 18,
+    spin: 6,
+    maxSpin: 12,
+    shield: 20,
     hp: 100,
-    radius: 28,
+    radius: 24,
     combo: 0,
     lastHitTs: 0,
     invincibleUntil: 0,
@@ -30,7 +42,7 @@ export function createAvatar(opts: { name: string; sprite: string; owner?: strin
   };
 }
 
-export function initialState(avatars: Avatar[], duration = 120_000): GameState {
+export function initialState(avatars: Avatar[], duration = 300_000): GameState {
   return {
     status: "lobby",
     startedAt: 0,
@@ -57,81 +69,86 @@ function ensureStat(state: GameState, username: string) {
   return state.stats[username];
 }
 
-function pickTarget(state: GameState, preferredId?: string): Avatar | undefined {
-  const alive = state.avatars.filter((a) => a.alive);
-  if (preferredId) {
-    const t = alive.find((a) => a.id === preferredId);
-    if (t) return t;
+const MAX_AVATARS = 24;
+
+// Find this viewer's existing spinner (by owner = username)
+function findOwned(state: GameState, username: string): Avatar | undefined {
+  return state.avatars.find((a) => a.owner === username && a.alive);
+}
+
+function spawnFor(state: GameState, ev: ViewerEvent, sizeMultiplier = 1): Avatar {
+  const sprite = profilePicFor(ev.username, ev.avatarUrl);
+  const ang = Math.random() * Math.PI * 2;
+  const av = createAvatar({ name: ev.username, owner: ev.username, sprite, angle: ang });
+  av.radius = 22 * sizeMultiplier;
+  state.avatars.push(av);
+  // cap arena population — kick the weakest already-dead, else weakest alive
+  if (state.avatars.length > MAX_AVATARS) {
+    const dead = state.avatars.filter((a) => !a.alive);
+    if (dead.length) {
+      const idx = state.avatars.indexOf(dead[0]);
+      state.avatars.splice(idx, 1);
+    }
   }
-  return alive[Math.floor(Math.random() * alive.length)];
+  addFloat(state, av.x, av.y - 30, `✨ @${ev.username} JOINED`, "var(--bubble)");
+  return av;
 }
 
 export function applyEvent(state: GameState, ev: ViewerEvent) {
   const stat = ensureStat(state, ev.username);
   const now = performance.now();
 
-  if (ev.action === "follow") {
-    stat.follows++; stat.score += 1;
-    const target = pickTarget(state, ev.targetId);
-    if (!target) return;
-    target.spin = Math.min(target.maxSpin + 4, target.spin + 1.5);
-    target.shield = Math.min(100, target.shield + 8);
-    target.combo++;
-    target.effects.push({ id: uid(), kind: "boost", until: now + 1500 });
-    addFloat(state, target.x, target.y - 30, `+SPIN @${ev.username}`, "var(--mint)");
-  } else if (ev.action === "share") {
-    stat.shares++; stat.score += 2;
-    const target = pickTarget(state, ev.targetId);
-    if (!target) return;
-    // push attack
-    const ang = Math.random() * Math.PI * 2;
-    target.vx += Math.cos(ang) * 80;
-    target.vy += Math.sin(ang) * 80;
-    if (now > target.invincibleUntil) {
-      const dmg = target.shield > 0 ? 4 : 8;
-      target.shield = Math.max(0, target.shield - 10);
-      target.hp = Math.max(0, target.hp - dmg);
-      target.lastHitTs = now;
-      target.combo++;
-    }
-    target.effects.push({ id: uid(), kind: "attack", until: now + 600 });
-    addFloat(state, target.x, target.y - 30, `💥 ${ev.username}`, "var(--coral)");
-  } else if (ev.action === "gift") {
-    stat.gifts++; stat.score += 5 * (ev.giftValue ?? 1);
-    const target = pickTarget(state, ev.targetId);
-    if (!target) return;
-    // mega: damage all others or invincibility for target
-    if (Math.random() > 0.5) {
-      target.invincibleUntil = now + 4000;
-      target.shield = 100;
-      target.effects.push({ id: uid(), kind: "shield", until: now + 4000 });
-      addFloat(state, target.x, target.y - 30, `🛡 INVINCIBLE`, "var(--accent)");
-    } else {
-      state.avatars.forEach((a) => {
-        if (a.id !== target.id && a.alive && now > a.invincibleUntil) {
-          a.hp = Math.max(0, a.hp - 15);
-          a.vx += (a.x - target.x) * 0.8;
-          a.vy += (a.y - target.y) * 0.8;
-          a.effects.push({ id: uid(), kind: "mega", until: now + 800 });
-        }
-      });
-      addFloat(state, target.x, target.y - 30, `🎁 MEGA ${ev.username}`, "var(--bubble)");
-    }
-  } else if (ev.action === "like") {
-    stat.likes++; stat.score += 0.2;
-    const target = pickTarget(state, ev.targetId);
-    if (!target) return;
-    target.spin = Math.min(target.maxSpin, target.spin + 0.3);
-  }
+  // EVERY viewer action either spawns their spinner or buffs the existing one
+  let mine = findOwned(state, ev.username);
 
-  // Combo detection: 5+ events on same target within 2s -> super spin
-  const target = pickTarget(state, ev.targetId);
-  if (target && target.combo >= 6) {
-    target.combo = 0;
-    target.spin = target.maxSpin + 6;
-    target.shield = 100;
-    target.effects.push({ id: uid(), kind: "combo", until: now + 2000 });
-    addFloat(state, target.x, target.y - 50, `⚡ SUPER SPIN!`, "var(--bubble)");
+  if (ev.action === "follow") {
+    stat.follows++;
+    stat.score += 1;
+    if (!mine) {
+      mine = spawnFor(state, ev, 1);
+    } else {
+      // boost existing
+      mine.spin = Math.min(mine.maxSpin + 2, mine.spin + 1);
+      mine.shield = Math.min(100, mine.shield + 12);
+      mine.hp = Math.min(100, mine.hp + 4);
+      mine.effects.push({ id: uid(), kind: "boost", until: now + 1500 });
+      addFloat(state, mine.x, mine.y - 30, `+SHIELD`, "var(--mint)");
+    }
+  } else if (ev.action === "share") {
+    stat.shares++;
+    stat.score += 2;
+    if (!mine) {
+      mine = spawnFor(state, ev, 1);
+      mine.spin = mine.maxSpin; // share spawns with attack-momentum
+    }
+    // share = attack burst from this spinner outward
+    mine.spin = Math.min(mine.maxSpin + 4, mine.spin + 2);
+    mine.shield = Math.min(100, mine.shield + 5);
+    const ang = Math.random() * Math.PI * 2;
+    mine.vx += Math.cos(ang) * 40;
+    mine.vy += Math.sin(ang) * 40;
+    mine.effects.push({ id: uid(), kind: "attack", until: now + 600 });
+    addFloat(state, mine.x, mine.y - 30, `🔁 SHARE`, "var(--coral)");
+  } else if (ev.action === "gift") {
+    stat.gifts++;
+    stat.score += 5 * (ev.giftValue ?? 1);
+    if (!mine) {
+      mine = spawnFor(state, ev, 1.4); // bigger spawn for gifters
+    }
+    // gift = mega upgrade: bigger, heal, brief invincibility
+    mine.radius = Math.min(36, mine.radius + 2);
+    mine.hp = Math.min(100, mine.hp + 25);
+    mine.shield = 100;
+    mine.spin = mine.maxSpin + 4;
+    mine.invincibleUntil = now + 3000;
+    mine.effects.push({ id: uid(), kind: "shield", until: now + 3000 });
+    addFloat(state, mine.x, mine.y - 30, `🎁 MEGA @${ev.username}`, "var(--bubble)");
+  } else if (ev.action === "like") {
+    stat.likes++;
+    stat.score += 0.2;
+    if (mine) {
+      mine.spin = Math.min(mine.maxSpin, mine.spin + 0.2);
+    }
   }
 
   state.events.push(ev);
@@ -142,7 +159,9 @@ export function applyEvent(state: GameState, ev: ViewerEvent) {
     state.challenge.progress++;
     if (state.challenge.progress >= state.challenge.goal) {
       addFloat(state, ARENA.cx, 40, `🏆 ${state.challenge.reward}`, "var(--accent)");
-      state.avatars.forEach((a) => { if (a.alive) a.shield = Math.min(100, a.shield + 30); });
+      state.avatars.forEach((a) => {
+        if (a.alive) a.shield = Math.min(100, a.shield + 30);
+      });
       state.challenge = undefined;
     }
   }
@@ -152,34 +171,39 @@ export function step(state: GameState, dt: number) {
   if (state.status !== "running") return;
   const now = performance.now();
 
-  // mini-challenge spawn
-  if (!state.challenge && Math.random() < 0.003) {
+  // mini-challenge spawn (rarer)
+  if (!state.challenge && Math.random() < 0.0015) {
     const types: ActionType[] = ["follow", "share", "gift"];
     const t = types[Math.floor(Math.random() * types.length)];
     state.challenge = {
       id: uid(),
-      label: t === "follow" ? "Follow x10 in 15s!" : t === "share" ? "Share x8 in 15s!" : "Send 3 gifts in 15s!",
+      label:
+        t === "follow"
+          ? "Follow x10 in 20s!"
+          : t === "share"
+            ? "Share x8 in 20s!"
+            : "Send 3 gifts in 20s!",
       goal: t === "follow" ? 10 : t === "share" ? 8 : 3,
       progress: 0,
       type: t,
-      reward: "Team Shield Boost",
-      endsAt: now + 15000,
+      reward: "Arena Shield Boost",
+      endsAt: now + 20000,
     };
   }
   if (state.challenge && now > state.challenge.endsAt) state.challenge = undefined;
 
-  // obstacle spawn
-  if (state.obstacles.length < 2 && Math.random() < 0.004) {
+  // obstacle spawn (rarer + softer)
+  if (state.obstacles.length < 2 && Math.random() < 0.002) {
     const ang = Math.random() * Math.PI * 2;
     const d = ARENA.r * (0.3 + Math.random() * 0.4);
     state.obstacles.push({
       id: uid(),
       x: ARENA.cx + Math.cos(ang) * d,
       y: ARENA.cy + Math.sin(ang) * d,
-      radius: 16,
-      kind: Math.random() > 0.5 ? "spike" : "bumper",
+      radius: 14,
+      kind: Math.random() > 0.6 ? "spike" : "bumper",
       bornAt: now,
-      ttl: 8000,
+      ttl: 10000,
     });
   }
   state.obstacles = state.obstacles.filter((o) => now - o.bornAt < o.ttl);
@@ -187,45 +211,41 @@ export function step(state: GameState, dt: number) {
   // movement
   for (const a of state.avatars) {
     if (!a.alive) continue;
-    a.x += a.vx * dt;
-    a.y += a.vy * dt;
-    // friction
-    a.vx *= 0.985;
-    a.vy *= 0.985;
-    // tiny chaotic drift from spin
-    const wobbleAng = now * 0.001 + parseInt(a.id, 36) % 7;
-    a.vx += Math.cos(wobbleAng) * a.spin * 0.4 * dt;
-    a.vy += Math.sin(wobbleAng) * a.spin * 0.4 * dt;
+    a.x += a.vx * dt * 0.6; // slower world
+    a.y += a.vy * dt * 0.6;
+    a.vx *= 0.99;
+    a.vy *= 0.99;
+    const wobbleAng = now * 0.0008 + (parseInt(a.id, 36) % 7);
+    a.vx += Math.cos(wobbleAng) * a.spin * 0.18 * dt;
+    a.vy += Math.sin(wobbleAng) * a.spin * 0.18 * dt;
 
-    // arena bounds (circular)
-    const dx = a.x - ARENA.cx, dy = a.y - ARENA.cy;
+    const dx = a.x - ARENA.cx,
+      dy = a.y - ARENA.cy;
     const d = Math.hypot(dx, dy);
     if (d + a.radius > ARENA.r) {
-      const nx = dx / d, ny = dy / d;
+      const nx = dx / d,
+        ny = dy / d;
       a.x = ARENA.cx + nx * (ARENA.r - a.radius);
       a.y = ARENA.cy + ny * (ARENA.r - a.radius);
       const dot = a.vx * nx + a.vy * ny;
       a.vx -= 2 * dot * nx * 0.7;
       a.vy -= 2 * dot * ny * 0.7;
-      // wall scrape damages a tiny bit
-      if (now > a.invincibleUntil && a.shield <= 0) a.hp = Math.max(0, a.hp - 0.05);
+      // wall scrape — much gentler
+      if (now > a.invincibleUntil && a.shield <= 0) a.hp = Math.max(0, a.hp - 0.01);
     }
 
-    // spin decays
-    a.spin = Math.max(2, a.spin - 0.05 * dt);
-    a.shield = Math.max(0, a.shield - 1 * dt);
+    // spin & shield decay (very slow)
+    a.spin = Math.max(2, a.spin - 0.015 * dt);
+    a.shield = Math.max(0, a.shield - 0.3 * dt);
 
-    // combo decay
-    if (now - a.lastHitTs > 2000) a.combo = Math.max(0, a.combo - dt * 2);
-
+    if (now - a.lastHitTs > 2500) a.combo = Math.max(0, a.combo - dt * 1);
     a.effects = a.effects.filter((e) => e.until > now);
 
-    // death
     if (a.hp <= 0 && a.alive) {
       a.alive = false;
       a.destroyedAt = now;
       state.destroyed.push({ id: a.id, name: a.name, killedAt: now });
-      addFloat(state, a.x, a.y, `💔 ${a.name}`, "var(--destructive)");
+      addFloat(state, a.x, a.y, `💔 @${a.name}`, "var(--destructive)");
     }
   }
 
@@ -236,62 +256,79 @@ export function step(state: GameState, dt: number) {
     for (let j = i + 1; j < state.avatars.length; j++) {
       const b = state.avatars[j];
       if (!b.alive) continue;
-      const dx = b.x - a.x, dy = b.y - a.y;
+      const dx = b.x - a.x,
+        dy = b.y - a.y;
       const d = Math.hypot(dx, dy) || 0.01;
       const overlap = a.radius + b.radius - d;
       if (overlap > 0) {
-        const nx = dx / d, ny = dy / d;
-        a.x -= nx * overlap / 2; a.y -= ny * overlap / 2;
-        b.x += nx * overlap / 2; b.y += ny * overlap / 2;
-        const relVx = b.vx - a.vx, relVy = b.vy - a.vy;
+        const nx = dx / d,
+          ny = dy / d;
+        a.x -= (nx * overlap) / 2;
+        a.y -= (ny * overlap) / 2;
+        b.x += (nx * overlap) / 2;
+        b.y += (ny * overlap) / 2;
+        const relVx = b.vx - a.vx,
+          relVy = b.vy - a.vy;
         const sep = relVx * nx + relVy * ny;
         if (sep < 0) {
-          const k = -sep * 1.6;
-          a.vx -= nx * k; a.vy -= ny * k;
-          b.vx += nx * k; b.vy += ny * k;
-          // damage based on relative spin
-          const power = (a.spin + b.spin) * 0.4;
+          const k = -sep * 1.2;
+          a.vx -= nx * k;
+          a.vy -= ny * k;
+          b.vx += nx * k;
+          b.vy += ny * k;
+          // damage scaled WAY down, scaled by relative spin difference
+          const power = Math.abs(a.spin - b.spin) * 0.25 + 0.4;
           if (now > a.invincibleUntil) {
-            const reduce = a.shield > 0 ? 0.3 : 1;
+            const reduce = a.shield > 0 ? 0.2 : 1;
             a.hp = Math.max(0, a.hp - power * reduce);
-            a.shield = Math.max(0, a.shield - 6);
+            a.shield = Math.max(0, a.shield - 3);
           }
           if (now > b.invincibleUntil) {
-            const reduce = b.shield > 0 ? 0.3 : 1;
+            const reduce = b.shield > 0 ? 0.2 : 1;
             b.hp = Math.max(0, b.hp - power * reduce);
-            b.shield = Math.max(0, b.shield - 6);
+            b.shield = Math.max(0, b.shield - 3);
           }
-          a.lastHitTs = now; b.lastHitTs = now;
+          a.lastHitTs = now;
+          b.lastHitTs = now;
         }
       }
     }
 
-    // obstacles
     for (const o of state.obstacles) {
-      const dx = a.x - o.x, dy = a.y - o.y;
+      const dx = a.x - o.x,
+        dy = a.y - o.y;
       const d = Math.hypot(dx, dy) || 0.01;
       const overlap = a.radius + o.radius - d;
       if (overlap > 0) {
-        const nx = dx / d, ny = dy / d;
-        a.x += nx * overlap; a.y += ny * overlap;
+        const nx = dx / d,
+          ny = dy / d;
+        a.x += nx * overlap;
+        a.y += ny * overlap;
         if (o.kind === "bumper") {
-          a.vx += nx * 200; a.vy += ny * 200;
+          a.vx += nx * 120;
+          a.vy += ny * 120;
         } else {
-          a.vx += nx * 80; a.vy += ny * 80;
-          if (now > a.invincibleUntil) a.hp = Math.max(0, a.hp - 6);
+          a.vx += nx * 50;
+          a.vy += ny * 50;
+          if (now > a.invincibleUntil) a.hp = Math.max(0, a.hp - 2);
         }
       }
     }
   }
 
-  // cleanup floats
-  state.floats = state.floats.filter((f) => now - f.ts < 1300);
+  state.floats = state.floats.filter((f) => now - f.ts < 1500);
 
-  // end conditions
+  // end ONLY on timer (so the arena keeps filling). If everyone happens to die
+  // and no spinners remain, end early.
   const aliveList = state.avatars.filter((a) => a.alive);
-  if (now >= state.endsAt || aliveList.length <= 1) {
+  if (now >= state.endsAt) {
     state.status = "ended";
-    state.winner = aliveList[0] ?? state.avatars.slice().sort((a, b) => (b.destroyedAt ?? 0) - (a.destroyedAt ?? 0))[0];
+    state.winner =
+      aliveList.sort((a, b) => b.hp - a.hp)[0] ??
+      state.avatars.slice().sort((a, b) => (b.destroyedAt ?? 0) - (a.destroyedAt ?? 0))[0];
+  } else if (state.avatars.length >= 2 && aliveList.length === 0) {
+    state.status = "ended";
+    state.winner = state.avatars.slice().sort((a, b) => (b.destroyedAt ?? 0) - (a.destroyedAt ?? 0))[0];
   }
 }
 
