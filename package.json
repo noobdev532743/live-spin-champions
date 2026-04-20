@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -k -n APP,BRIDGE -c cyan,magenta \"npm:dev:app\" \"npm:dev:bridge\"",
     "dev:app": "vite dev",
-    "dev:bridge": "cross-env TARGET_URL=http://localhost:3000 node bridge/index.js",
+    "dev:bridge": "cross-env TARGET_URL=http://localhost:8080 node bridge/index.js",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
