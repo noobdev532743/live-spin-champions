@@ -16,11 +16,12 @@ function Relay() {
   const enqueue = useGame((s) => s.enqueue);
   const tiktokUsername = useGame((s) => s.state.tiktokUsername ?? "");
   const setTiktokUsername = useGame((s) => s.setTiktokUsername);
+  const armed = useGame((s) => s.state.armed ?? false);
+  const setArmed = useGame((s) => s.setArmed);
 
   const [origin, setOrigin] = useState("");
   const [logs, setLogs] = useState<string[]>([]);
   const [usernameInput, setUsernameInput] = useState("");
-  const [armed, setArmed] = useState(false);
   const armedRef = useRef(false);
   const tabIdRef = useRef<string>("");
 
