@@ -55,6 +55,7 @@ export function initialState(avatars: Avatar[], duration = 300_000): GameState {
     events: [],
     stats: {},
     destroyed: [],
+    settings: { spinMul: 1, bounceMul: 0.5 },
   };
 }
 
@@ -221,16 +222,19 @@ export function step(state: GameState, dt: number) {
   }
   state.obstacles = state.obstacles.filter((o) => now - o.bornAt < o.ttl);
 
+  const spinMul = state.settings.spinMul;
+  const bounceMul = state.settings.bounceMul;
+
   // movement
   for (const a of state.avatars) {
     if (!a.alive) continue;
-    a.x += a.vx * dt * 0.6; // slower world
-    a.y += a.vy * dt * 0.6;
+    a.x += a.vx * dt * 0.6 * spinMul;
+    a.y += a.vy * dt * 0.6 * spinMul;
     a.vx *= 0.99;
     a.vy *= 0.99;
     const wobbleAng = now * 0.0008 + (parseInt(a.id, 36) % 7);
-    a.vx += Math.cos(wobbleAng) * a.spin * 0.18 * dt;
-    a.vy += Math.sin(wobbleAng) * a.spin * 0.18 * dt;
+    a.vx += Math.cos(wobbleAng) * a.spin * 0.18 * dt * spinMul;
+    a.vy += Math.sin(wobbleAng) * a.spin * 0.18 * dt * spinMul;
 
     const dx = a.x - ARENA.cx,
       dy = a.y - ARENA.cy;
@@ -284,14 +288,14 @@ export function step(state: GameState, dt: number) {
           relVy = b.vy - a.vy;
         const sep = relVx * nx + relVy * ny;
         if (sep < 0) {
-          // softer bounce
-          const k = -sep * 0.5;
+          // softer bounce — scaled by user setting
+          const k = -sep * bounceMul;
           a.vx -= nx * k;
           a.vy -= ny * k;
           b.vx += nx * k;
           b.vy += ny * k;
           // clamp velocity so collisions never fling spinners
-          const MAX_V = 90;
+          const MAX_V = 60 + 80 * bounceMul;
           const va = Math.hypot(a.vx, a.vy);
           if (va > MAX_V) {
             a.vx = (a.vx / va) * MAX_V;

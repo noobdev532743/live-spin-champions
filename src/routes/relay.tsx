@@ -14,9 +14,18 @@ export const Route = createFileRoute("/relay")({
 
 function Relay() {
   const enqueue = useGame((s) => s.enqueue);
+  const tiktokUsername = useGame((s) => s.state.tiktokUsername ?? "");
+  const setTiktokUsername = useGame((s) => s.setTiktokUsername);
+
   const [origin, setOrigin] = useState("");
   const [logs, setLogs] = useState<string[]>([]);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [armed, setArmed] = useState(false);
+  const armedRef = useRef(false);
   const tabIdRef = useRef<string>("");
+
+  useEffect(() => { armedRef.current = armed; }, [armed]);
+  useEffect(() => { setUsernameInput(tiktokUsername); }, [tiktokUsername]);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -25,13 +34,20 @@ function Relay() {
     if (bc) {
       bc.onmessage = (m) => {
         const ev = m.data;
+        if (!armedRef.current) {
+          setLogs((l) => [`⏸ ignored ${ev.action} @${ev.username} (not connected)`, ...l].slice(0, 30));
+          return;
+        }
         enqueue(ev);
         setLogs((l) => [`✓ ${ev.action} @${ev.username}`, ...l].slice(0, 30));
       };
     }
-    // also accept window.postMessage from extensions
     const onMsg = (e: MessageEvent) => {
       if (e.data?.type === "spinstars-event") {
+        if (!armedRef.current) {
+          setLogs((l) => [`⏸ ignored ${e.data.event.action} @${e.data.event.username} (not connected)`, ...l].slice(0, 30));
+          return;
+        }
         enqueue(e.data.event);
         setLogs((l) => [`✓ ${e.data.event.action} @${e.data.event.username}`, ...l].slice(0, 30));
       }
@@ -40,10 +56,28 @@ function Relay() {
     return () => { bc?.close(); window.removeEventListener("message", onMsg); };
   }, [enqueue]);
 
-  const url = origin ? `${origin}/api/event` : "";
-  const sample = `curl -X POST ${url} \\\n  -H "Content-Type: application/json" \\\n  -d '{"username":"viewer1","action":"gift","giftValue":5}'`;
+  const cleanUsername = usernameInput.trim().replace(/^@/, "");
+  const url = origin && cleanUsername
+    ? `${origin}/api/event?u=${encodeURIComponent(cleanUsername)}`
+    : origin ? `${origin}/api/event` : "";
+  const sample = `curl -X POST ${url || "<URL>"} \\\n  -H "Content-Type: application/json" \\\n  -d '{"username":"viewer1","action":"gift","giftValue":5}'`;
+
+  const connect = () => {
+    if (!cleanUsername) return;
+    setTiktokUsername(cleanUsername);
+    setArmed(true);
+    setLogs((l) => [`🟢 connected to @${cleanUsername} — listening for events`, ...l].slice(0, 30));
+  };
+  const disconnect = () => {
+    setArmed(false);
+    setLogs((l) => [`🔴 disconnected — events will be ignored`, ...l].slice(0, 30));
+  };
 
   const test = async (action: string) => {
+    if (!armed) {
+      setLogs((l) => [`⚠ press Connect first (events are ignored until then)`, ...l].slice(0, 30));
+      return;
+    }
     const res = await fetch("/api/event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -68,24 +102,71 @@ function Relay() {
           <span />
         </header>
 
+        <section className="rounded-2xl bg-card p-4 shadow-clay space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-bold">1. Your TikTok account</h2>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${armed ? "bg-mint" : "bg-muted text-muted-foreground"}`}>
+              {armed ? "🟢 LIVE" : "⏸ IDLE"}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Enter your TikTok username and press <b>Connect</b>. Events from your TikTok Live (follow / like / share / gift) will only start spawning spinners after you connect — so nothing fires before you go live.
+          </p>
+          <div className="flex gap-2">
+            <div className="flex-1 flex items-center rounded-xl bg-muted px-3">
+              <span className="text-muted-foreground text-sm font-mono">@</span>
+              <input
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                placeholder="your_tiktok_handle"
+                className="flex-1 bg-transparent py-2 text-sm focus:outline-none"
+                disabled={armed}
+              />
+            </div>
+            {!armed ? (
+              <button
+                onClick={connect}
+                disabled={!cleanUsername}
+                className="rounded-xl bg-primary text-primary-foreground px-4 text-xs font-bold shadow-pop disabled:opacity-40"
+              >
+                Connect
+              </button>
+            ) : (
+              <button onClick={disconnect} className="rounded-xl bg-destructive text-destructive-foreground px-4 text-xs font-bold shadow-pop">
+                Disconnect
+              </button>
+            )}
+          </div>
+          {armed && (
+            <p className="text-[10px] text-mint-foreground bg-mint/40 rounded-lg p-2">
+              ✓ Listening for @{cleanUsername}. Open the game in another tab — events will broadcast across tabs.
+            </p>
+          )}
+        </section>
+
         <section className="rounded-2xl bg-card p-4 shadow-clay space-y-2">
-          <h2 className="font-display font-bold">1. TikFinity webhook</h2>
-          <p className="text-xs text-muted-foreground">Point your TikFinity / TikTokLive bridge to this URL. Send events as JSON.</p>
+          <h2 className="font-display font-bold">2. TikFinity webhook</h2>
+          <p className="text-xs text-muted-foreground">
+            Point your TikFinity / TikTokLive bridge to this URL. Send events as JSON. The <code>?u=</code> param tags events with your TikTok handle.
+          </p>
           <code className="block text-[10px] bg-muted rounded-lg p-2 break-all font-mono">{url || "loading…"}</code>
           <pre className="text-[10px] bg-muted rounded-lg p-2 overflow-x-auto font-mono whitespace-pre">{sample}</pre>
           <p className="text-[10px] text-muted-foreground">Supported actions: <code>follow</code>, <code>share</code>, <code>like</code>, <code>gift</code></p>
         </section>
 
         <section className="rounded-2xl bg-card p-4 shadow-clay space-y-2">
-          <h2 className="font-display font-bold">2. Test it</h2>
+          <h2 className="font-display font-bold">3. Test it</h2>
           <div className="grid grid-cols-4 gap-2">
             {["follow","share","like","gift"].map((a) => (
-              <button key={a} onClick={() => test(a)} className="rounded-xl bg-primary text-primary-foreground py-2 text-xs font-bold shadow-pop">
+              <button key={a} onClick={() => test(a)} disabled={!armed}
+                className="rounded-xl bg-primary text-primary-foreground py-2 text-xs font-bold shadow-pop disabled:opacity-40">
                 {a}
               </button>
             ))}
           </div>
-          <p className="text-[10px] text-muted-foreground">Open the game in another tab — events broadcast across tabs via BroadcastChannel.</p>
+          <p className="text-[10px] text-muted-foreground">
+            {armed ? "Buttons fire test events into the live game." : "Connect first to enable test events."}
+          </p>
         </section>
 
         <section className="rounded-2xl bg-card p-4 shadow-clay">

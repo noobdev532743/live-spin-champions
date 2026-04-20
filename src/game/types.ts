@@ -101,4 +101,9 @@ export interface GameState {
   destroyed: { id: string; name: string; killedAt: number }[];
   challenge?: MiniChallenge;
   winner?: Avatar;
+  settings: {
+    spinMul: number;    // 0.3..2 — scales movement speed
+    bounceMul: number;  // 0.2..2 — scales collision impulse
+  };
+  tiktokUsername?: string;
 }

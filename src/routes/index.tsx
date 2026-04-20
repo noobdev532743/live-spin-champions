@@ -5,6 +5,7 @@ import { Leaderboard } from "@/components/game/Leaderboard";
 import { ControlPanel } from "@/components/game/ControlPanel";
 import { EventTicker } from "@/components/game/EventTicker";
 import { PostGame } from "@/components/game/PostGame";
+import { SettingsPanel } from "@/components/game/SettingsPanel";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,6 +41,8 @@ function Index() {
         <EventTicker />
 
         <Leaderboard />
+
+        <SettingsPanel />
 
         <ControlPanel />
 
