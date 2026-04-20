@@ -271,12 +271,24 @@ export function step(state: GameState, dt: number) {
           relVy = b.vy - a.vy;
         const sep = relVx * nx + relVy * ny;
         if (sep < 0) {
-          const k = -sep * 1.2;
+          // softer bounce
+          const k = -sep * 0.5;
           a.vx -= nx * k;
           a.vy -= ny * k;
           b.vx += nx * k;
           b.vy += ny * k;
-          // damage scaled WAY down, scaled by relative spin difference
+          // clamp velocity so collisions never fling spinners
+          const MAX_V = 90;
+          const va = Math.hypot(a.vx, a.vy);
+          if (va > MAX_V) {
+            a.vx = (a.vx / va) * MAX_V;
+            a.vy = (a.vy / va) * MAX_V;
+          }
+          const vb = Math.hypot(b.vx, b.vy);
+          if (vb > MAX_V) {
+            b.vx = (b.vx / vb) * MAX_V;
+            b.vy = (b.vy / vb) * MAX_V;
+          }
           const power = Math.abs(a.spin - b.spin) * 0.25 + 0.4;
           if (now > a.invincibleUntil) {
             const reduce = a.shield > 0 ? 0.2 : 1;
