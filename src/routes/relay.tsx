@@ -81,7 +81,8 @@ function Relay() {
   const url = origin && cleanUsername
     ? `${origin}/api/event?u=${encodeURIComponent(cleanUsername)}`
     : origin ? `${origin}/api/event` : "";
-  const sample = `curl -X POST ${url || "<URL>"} \\\n  -H "Content-Type: application/json" \\\n  -d '{"username":"viewer1","action":"gift","giftValue":5}'`;
+  const getUrl = origin ? `${origin}/api/event?action=gift&u=${encodeURIComponent(cleanUsername || "viewer1")}` : "";
+  const sample = `# Easiest — GET (works in browser, TikFinity custom webhook):\n${getUrl}\n\n# Or POST JSON (TikFinity / TikTokLive bridge):\ncurl -X POST ${url || "<URL>"} \\\n  -H "Content-Type: application/json" \\\n  -d '{"username":"viewer1","action":"gift","giftValue":5}'`;
 
   const connect = () => {
     if (!cleanUsername) return;
