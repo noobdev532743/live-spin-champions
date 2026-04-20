@@ -3,18 +3,21 @@ import { useEffect, useState } from "react";
 
 export function HUD() {
   const { state } = useGame();
-  const [now, setNow] = useState(performance.now());
+  const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
+    setNow(performance.now());
     const id = setInterval(() => setNow(performance.now()), 200);
     return () => clearInterval(id);
   }, []);
 
-  const remaining = state.status === "running" ? Math.max(0, state.endsAt - now) : state.duration;
+  const remaining = now === null
+    ? state.duration
+    : state.status === "running" ? Math.max(0, state.endsAt - now) : state.duration;
   const sec = Math.ceil(remaining / 1000);
   const mm = String(Math.floor(sec / 60)).padStart(2, "0");
   const ss = String(sec % 60).padStart(2, "0");
   const aliveCount = state.avatars.filter((a) => a.alive).length;
-  const urgent = sec <= 10 && state.status === "running";
+  const urgent = now !== null && sec <= 10 && state.status === "running";
 
   return (
     <div className="space-y-2">
