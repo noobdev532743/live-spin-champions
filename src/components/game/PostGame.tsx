@@ -33,7 +33,7 @@ export function PostGame() {
           </div>
         </div>
 
-        <button onClick={() => reset(4)} className="w-full rounded-2xl bg-primary text-primary-foreground py-3 font-display font-bold shadow-pop">
+        <button onClick={() => reset()} className="w-full rounded-2xl bg-primary text-primary-foreground py-3 font-display font-bold shadow-pop">
           Play Again ✨
         </button>
       </div>
