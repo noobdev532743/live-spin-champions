@@ -51,10 +51,23 @@ export function initialState(avatars: Avatar[], duration = 300_000): GameState {
     avatars,
     obstacles: [],
     floats: [],
+    sparks: [],
     events: [],
     stats: {},
     destroyed: [],
   };
+}
+
+function addSpark(state: GameState, x: number, y: number, intensity: number, kind: "puff" | "spike" = "puff") {
+  state.sparks.push({
+    id: Math.random().toString(36).slice(2, 9),
+    x, y,
+    ts: performance.now(),
+    ttl: 450,
+    intensity: Math.max(0.3, Math.min(1, intensity)),
+    kind,
+  });
+  if (state.sparks.length > 60) state.sparks.shift();
 }
 
 function addFloat(state: GameState, x: number, y: number, text: string, color: string) {
