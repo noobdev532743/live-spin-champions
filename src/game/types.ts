@@ -95,6 +95,7 @@ export interface GameState {
   avatars: Avatar[];
   obstacles: Obstacle[];
   floats: FloatingText[];
+  sparks: Spark[];
   events: ViewerEvent[];
   stats: Record<string, ViewerStat>;
   destroyed: { id: string; name: string; killedAt: number }[];
