@@ -334,16 +334,19 @@ export function step(state: GameState, dt: number) {
         if (o.kind === "bumper") {
           a.vx += nx * 120;
           a.vy += ny * 120;
+          addSpark(state, o.x + nx * o.radius, o.y + ny * o.radius, 0.7, "puff");
         } else {
           a.vx += nx * 50;
           a.vy += ny * 50;
           if (now > a.invincibleUntil) a.hp = Math.max(0, a.hp - 2);
+          addSpark(state, o.x + nx * o.radius, o.y + ny * o.radius, 0.9, "spike");
         }
       }
     }
   }
 
   state.floats = state.floats.filter((f) => now - f.ts < 1500);
+  state.sparks = state.sparks.filter((s) => now - s.ts < s.ttl);
 
   // end ONLY on timer (so the arena keeps filling). If everyone happens to die
   // and no spinners remain, end early.
