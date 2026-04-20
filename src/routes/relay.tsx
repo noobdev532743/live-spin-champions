@@ -54,7 +54,27 @@ function Relay() {
       }
     };
     window.addEventListener("message", onMsg);
-    return () => { bc?.close(); window.removeEventListener("message", onMsg); };
+
+    // SSE stream from server — receives events posted by the TikFinity webhook
+    const es = new EventSource("/api/stream");
+    es.onopen = () => setLogs((l) => [`📡 SSE connected (/api/stream)`, ...l].slice(0, 30));
+    es.onerror = () => setLogs((l) => [`⚠ SSE error — auto-retrying`, ...l].slice(0, 30));
+    es.onmessage = (m) => {
+      try {
+        const ev = JSON.parse(m.data);
+        if (ev?.type === "hello") return;
+        if (!ev?.action || !ev?.username) return;
+        if (!armedRef.current) {
+          setLogs((l) => [`⏸ ignored ${ev.action} @${ev.username} (not connected)`, ...l].slice(0, 30));
+          return;
+        }
+        enqueue(ev);
+        bc?.postMessage(ev);
+        setLogs((l) => [`📨 webhook ${ev.action} @${ev.username}`, ...l].slice(0, 30));
+      } catch { /* ignore */ }
+    };
+
+    return () => { bc?.close(); window.removeEventListener("message", onMsg); es.close(); };
   }, [enqueue]);
 
   const cleanUsername = usernameInput.trim().replace(/^@/, "");
