@@ -216,6 +216,12 @@ function Relay() {
             <li>Download folder <code className="bg-muted px-1 rounded">bridge/</code> dari project ini (atau clone repo).</li>
             <li>Buka terminal di folder itu lalu jalankan:</li>
           </ol>
+          <p className="text-[11px] font-bold mt-1">Windows PowerShell:</p>
+          <code className="block text-[11px] bg-muted rounded-lg p-2 break-all font-mono select-all whitespace-pre">{`cd bridge
+npm install
+$env:TIKTOK_USERNAME="${cleanUsername || "username_kamu"}"
+npm start`}</code>
+          <p className="text-[11px] font-bold mt-1">macOS / Linux:</p>
           <code className="block text-[11px] bg-muted rounded-lg p-2 break-all font-mono select-all whitespace-pre">{`cd bridge
 npm install
 TIKTOK_USERNAME=${cleanUsername || "username_kamu"} npm start`}</code>
