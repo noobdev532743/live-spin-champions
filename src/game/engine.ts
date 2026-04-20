@@ -288,14 +288,14 @@ export function step(state: GameState, dt: number) {
           relVy = b.vy - a.vy;
         const sep = relVx * nx + relVy * ny;
         if (sep < 0) {
-          // softer bounce
-          const k = -sep * 0.5;
+          // softer bounce — scaled by user setting
+          const k = -sep * bounceMul;
           a.vx -= nx * k;
           a.vy -= ny * k;
           b.vx += nx * k;
           b.vy += ny * k;
           // clamp velocity so collisions never fling spinners
-          const MAX_V = 90;
+          const MAX_V = 60 + 80 * bounceMul;
           const va = Math.hypot(a.vx, a.vy);
           if (va > MAX_V) {
             a.vx = (a.vx / va) * MAX_V;
