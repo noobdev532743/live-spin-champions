@@ -143,13 +143,21 @@ function Relay() {
 
         <section className="rounded-2xl bg-card p-4 shadow-clay space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-display font-bold">1. Your TikTok account</h2>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${armed ? "bg-mint" : "bg-muted text-muted-foreground"}`}>
-              {armed ? "🟢 LIVE" : "⏸ IDLE"}
+            <h2 className="font-display font-bold">1. Your TikTok Live</h2>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              live.status === "live" ? "bg-mint" :
+              live.status === "connecting" ? "bg-sky animate-pulse" :
+              live.status === "error" ? "bg-destructive text-destructive-foreground" :
+              armed ? "bg-coral/40" : "bg-muted text-muted-foreground"
+            }`}>
+              {live.status === "live" ? `🟢 LIVE${live.viewerCount != null ? ` · ${live.viewerCount} 👁` : ""}` :
+               live.status === "connecting" ? "🔌 CONNECTING…" :
+               live.status === "error" ? "⚠ ERROR" :
+               armed ? "⏳ WAITING" : "⏸ IDLE"}
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Enter your TikTok username and press <b>Connect</b>. Events from your TikTok Live (follow / like / share / gift) will only start spawning spinners after you connect — so nothing fires before you go live.
+            Masukkan username TikTok kamu lalu tekan <b>Connect</b>. Begitu kamu mulai TikTok Live, semua <b>follow / like / share / gift</b> akan otomatis terbaca dan langsung spawn spinner di arena pakai foto profil viewer-nya.
           </p>
           <div className="flex gap-2">
             <div className="flex-1 flex items-center rounded-xl bg-muted px-3">
@@ -157,7 +165,7 @@ function Relay() {
               <input
                 value={usernameInput}
                 onChange={(e) => setUsernameInput(e.target.value)}
-                placeholder="your_tiktok_handle"
+                placeholder="username_tiktok_kamu"
                 className="flex-1 bg-transparent py-2 text-sm focus:outline-none"
                 disabled={armed}
               />
@@ -176,21 +184,29 @@ function Relay() {
               </button>
             )}
           </div>
-          {armed && (
-            <p className="text-[10px] text-mint-foreground bg-mint/40 rounded-lg p-2">
-              ✓ Listening for @{cleanUsername}. Open the game in another tab — events will broadcast across tabs.
+          {armed && live.status !== "live" && (
+            <p className="text-[10px] bg-coral/20 rounded-lg p-2">
+              ⏳ Menunggu kamu memulai TikTok Live di akun <b>@{cleanUsername}</b>. Begitu live mulai, status berubah jadi 🟢 LIVE dan event otomatis masuk.
             </p>
+          )}
+          {live.status === "live" && (
+            <p className="text-[10px] text-mint-foreground bg-mint/40 rounded-lg p-2">
+              ✅ Tersambung ke @{cleanUsername}. Follow / like / share / gift dari viewer langsung spawn spinner di arena 🎉
+            </p>
+          )}
+          {live.error && (
+            <p className="text-[10px] text-destructive">Bridge error: {live.error}</p>
           )}
         </section>
 
         <section className="rounded-2xl bg-card p-4 shadow-clay space-y-2">
-          <h2 className="font-display font-bold">2. TikFinity webhook</h2>
+          <h2 className="font-display font-bold">2. Webhook (opsional, untuk TikFinity)</h2>
           <p className="text-xs text-muted-foreground">
-            Point your TikFinity / TikTokLive bridge to this URL. Send events as JSON. The <code>?u=</code> param tags events with your TikTok handle.
+            Kalau auto-connect di atas terblokir, kamu bisa juga pakai TikFinity di PC dan arahkan webhook-nya ke URL ini:
           </p>
           <code className="block text-[10px] bg-muted rounded-lg p-2 break-all font-mono">{url || "loading…"}</code>
           <pre className="text-[10px] bg-muted rounded-lg p-2 overflow-x-auto font-mono whitespace-pre">{sample}</pre>
-          <p className="text-[10px] text-muted-foreground">Supported actions: <code>follow</code>, <code>share</code>, <code>like</code>, <code>gift</code></p>
+          <p className="text-[10px] text-muted-foreground">Action yang didukung: <code>follow</code>, <code>share</code>, <code>like</code>, <code>gift</code></p>
         </section>
 
         <section className="rounded-2xl bg-card p-4 shadow-clay space-y-2">
