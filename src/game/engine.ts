@@ -55,6 +55,7 @@ export function initialState(avatars: Avatar[], duration = 300_000): GameState {
     events: [],
     stats: {},
     destroyed: [],
+    settings: { spinMul: 1, bounceMul: 0.5 },
   };
 }
 
