@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RelayRouteImport } from './routes/relay'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiStreamRouteImport } from './routes/api/stream'
 import { Route as ApiEventRouteImport } from './routes/api/event'
 
 const RelayRoute = RelayRouteImport.update({
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStreamRoute = ApiStreamRouteImport.update({
+  id: '/api/stream',
+  path: '/api/stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiEventRoute = ApiEventRouteImport.update({
   id: '/api/event',
   path: '/api/event',
@@ -33,30 +39,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/relay': typeof RelayRoute
   '/api/event': typeof ApiEventRoute
+  '/api/stream': typeof ApiStreamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/relay': typeof RelayRoute
   '/api/event': typeof ApiEventRoute
+  '/api/stream': typeof ApiStreamRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/relay': typeof RelayRoute
   '/api/event': typeof ApiEventRoute
+  '/api/stream': typeof ApiStreamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/relay' | '/api/event'
+  fullPaths: '/' | '/relay' | '/api/event' | '/api/stream'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/relay' | '/api/event'
-  id: '__root__' | '/' | '/relay' | '/api/event'
+  to: '/' | '/relay' | '/api/event' | '/api/stream'
+  id: '__root__' | '/' | '/relay' | '/api/event' | '/api/stream'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RelayRoute: typeof RelayRoute
   ApiEventRoute: typeof ApiEventRoute
+  ApiStreamRoute: typeof ApiStreamRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stream': {
+      id: '/api/stream'
+      path: '/api/stream'
+      fullPath: '/api/stream'
+      preLoaderRoute: typeof ApiStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/event': {
       id: '/api/event'
       path: '/api/event'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RelayRoute: RelayRoute,
   ApiEventRoute: ApiEventRoute,
+  ApiStreamRoute: ApiStreamRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
