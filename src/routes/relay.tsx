@@ -44,11 +44,19 @@ function Relay() {
   const sample = `curl -X POST ${url} \\\n  -H "Content-Type: application/json" \\\n  -d '{"username":"viewer1","action":"gift","giftValue":5}'`;
 
   const test = async (action: string) => {
-    await fetch("/api/event", {
+    const res = await fetch("/api/event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "tester", action }),
     });
+    const data = await res.json();
+    if (data?.event) {
+      enqueue(data.event);
+      setLogs((l) => [`✓ ${data.event.action} @${data.event.username}`, ...l].slice(0, 30));
+      const bc = "BroadcastChannel" in window ? new BroadcastChannel("spinstars-events") : null;
+      bc?.postMessage(data.event);
+      bc?.close();
+    }
   };
 
   return (
