@@ -10,7 +10,7 @@ export const Route = createFileRoute("/api/event")({
   server: {
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: cors }),
-      POST: async ({ request }) => {
+      POST: async ({ request }: { request: Request }) => {
         try {
           const body = await request.json();
           const username = String(body.username ?? "anon").slice(0, 32);
