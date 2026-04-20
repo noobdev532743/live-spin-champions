@@ -146,10 +146,12 @@
   @keyframes pulse-ring { 0%{transform:scale(.8);opacity:.8} 100%{transform:scale(2.2);opacity:0} }
   @keyframes shake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-3px,2px)} 50%{transform:translate(3px,-2px)} 75%{transform:translate(-2px,-2px)} }
   @keyframes confetti-fall { to { transform: translateY(110vh) rotate(720deg); } }
+  @keyframes spark { 0%{transform:scale(.2);opacity:.95} 60%{transform:scale(1.15);opacity:.7} 100%{transform:scale(1.6);opacity:0} }
 
   .animate-wobble { animation: wobble 1.2s ease-in-out infinite; }
   .animate-pop { animation: pop .4s cubic-bezier(.34,1.56,.64,1) both; }
   .animate-float-up { animation: float-up 1.2s ease-out forwards; }
   .animate-pulse-ring { animation: pulse-ring 1s ease-out forwards; }
   .animate-shake { animation: shake .25s linear; }
+  .animate-spark { animation: spark .45s ease-out forwards; }
 }

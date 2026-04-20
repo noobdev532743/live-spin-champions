@@ -48,6 +48,16 @@ export interface FloatingText {
   ts: number;
 }
 
+export interface Spark {
+  id: string;
+  x: number;
+  y: number;
+  ts: number;
+  ttl: number; // ms
+  intensity: number; // 0..1, scales size
+  kind: "puff" | "spike";
+}
+
 export interface ViewerStat {
   username: string;
   follows: number;
@@ -85,6 +95,7 @@ export interface GameState {
   avatars: Avatar[];
   obstacles: Obstacle[];
   floats: FloatingText[];
+  sparks: Spark[];
   events: ViewerEvent[];
   stats: Record<string, ViewerStat>;
   destroyed: { id: string; name: string; killedAt: number }[];

@@ -51,10 +51,23 @@ export function initialState(avatars: Avatar[], duration = 300_000): GameState {
     avatars,
     obstacles: [],
     floats: [],
+    sparks: [],
     events: [],
     stats: {},
     destroyed: [],
   };
+}
+
+function addSpark(state: GameState, x: number, y: number, intensity: number, kind: "puff" | "spike" = "puff") {
+  state.sparks.push({
+    id: Math.random().toString(36).slice(2, 9),
+    x, y,
+    ts: performance.now(),
+    ttl: 450,
+    intensity: Math.max(0.3, Math.min(1, intensity)),
+    kind,
+  });
+  if (state.sparks.length > 60) state.sparks.shift();
 }
 
 function addFloat(state: GameState, x: number, y: number, text: string, color: string) {
@@ -302,6 +315,8 @@ export function step(state: GameState, dt: number) {
           }
           a.lastHitTs = now;
           b.lastHitTs = now;
+          // spark at midpoint, intensity from impact power
+          addSpark(state, (a.x + b.x) / 2, (a.y + b.y) / 2, Math.min(1, power / 2.5), "puff");
         }
       }
     }
@@ -319,16 +334,19 @@ export function step(state: GameState, dt: number) {
         if (o.kind === "bumper") {
           a.vx += nx * 120;
           a.vy += ny * 120;
+          addSpark(state, o.x + nx * o.radius, o.y + ny * o.radius, 0.7, "puff");
         } else {
           a.vx += nx * 50;
           a.vy += ny * 50;
           if (now > a.invincibleUntil) a.hp = Math.max(0, a.hp - 2);
+          addSpark(state, o.x + nx * o.radius, o.y + ny * o.radius, 0.9, "spike");
         }
       }
     }
   }
 
   state.floats = state.floats.filter((f) => now - f.ts < 1500);
+  state.sparks = state.sparks.filter((s) => now - s.ts < s.ttl);
 
   // end ONLY on timer (so the arena keeps filling). If everyone happens to die
   // and no spinners remain, end early.

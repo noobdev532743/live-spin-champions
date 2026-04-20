@@ -99,6 +99,29 @@ export function Arena() {
         );
       })}
 
+      {/* Collision sparks / dust puffs */}
+      {state.sparks.map((s) => {
+        const size = 18 + s.intensity * 28;
+        const isSpike = s.kind === "spike";
+        return (
+          <div
+            key={s.id}
+            className="absolute pointer-events-none animate-spark"
+            style={{
+              left: s.x - size / 2,
+              top: s.y - size / 2,
+              width: size,
+              height: size,
+              borderRadius: "9999px",
+              background: isSpike
+                ? "radial-gradient(circle, var(--accent) 0%, var(--coral) 40%, transparent 70%)"
+                : "radial-gradient(circle, white 0%, var(--bubble) 35%, transparent 70%)",
+              mixBlendMode: "screen",
+            }}
+          />
+        );
+      })}
+
       {/* Floating texts */}
       {state.floats.map((f) => (
         <div key={f.id}
