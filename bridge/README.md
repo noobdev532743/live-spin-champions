@@ -12,10 +12,25 @@ Jembatan kecil yang baca event TikTok Live (follow / like / share / gift) dari a
 ```bash
 cd bridge
 npm install
-TIKTOK_USERNAME=kohcun npm start
 ```
 
-Ganti `kohcun` dengan username TikTok kamu (tanpa `@`).
+Lalu jalankan sesuai OS kamu (ganti `kohcun` dengan username TikTok kamu, tanpa `@`):
+
+**Windows PowerShell:**
+```powershell
+$env:TIKTOK_USERNAME="kohcun"
+npm start
+```
+
+**Windows CMD:**
+```cmd
+set TIKTOK_USERNAME=kohcun && npm start
+```
+
+**macOS / Linux:**
+```bash
+TIKTOK_USERNAME=kohcun npm start
+```
 
 Output yang sehat:
 
@@ -31,8 +46,16 @@ Setiap event yang masuk langsung spawn spinner di arena.
 
 ## Custom target URL
 
-Kalau kamu test di preview, set `TARGET_URL`:
+Kalau kamu test di preview, set `TARGET_URL` juga:
 
+**PowerShell:**
+```powershell
+$env:TIKTOK_USERNAME="kohcun"
+$env:TARGET_URL="https://id-preview--ee13df3f-3b8c-4126-b5bf-9faa92c24b48.lovable.app"
+npm start
+```
+
+**macOS / Linux:**
 ```bash
 TIKTOK_USERNAME=kohcun TARGET_URL=https://id-preview--ee13df3f-3b8c-4126-b5bf-9faa92c24b48.lovable.app npm start
 ```
