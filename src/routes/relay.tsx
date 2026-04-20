@@ -97,6 +97,21 @@ function Relay() {
     setLogs((l) => [`🔴 disconnected — events will be ignored`, ...l].slice(0, 30));
   };
 
+  // Auto-connect to TikTok Live via public bridge (no install needed).
+  const handleLiveEvent = useCallback((ev: ViewerEvent) => {
+    if (!armedRef.current) return;
+    enqueue(ev);
+    const bc = "BroadcastChannel" in window ? new BroadcastChannel("spinstars-events") : null;
+    bc?.postMessage(ev);
+    bc?.close();
+  }, [enqueue]);
+  const live = useTikTokLive({
+    username: cleanUsername,
+    enabled: armed && !!cleanUsername,
+    onEvent: handleLiveEvent,
+    onLog: (msg) => setLogs((l) => [msg, ...l].slice(0, 30)),
+  });
+
   const test = async (action: string) => {
     if (!armed) {
       setLogs((l) => [`⚠ press Connect first (events are ignored until then)`, ...l].slice(0, 30));
