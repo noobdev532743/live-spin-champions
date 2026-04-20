@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useGame } from "@/game/store";
+import { useTikTokLive } from "@/hooks/useTikTokLive";
+import type { ViewerEvent } from "@/game/types";
 
 export const Route = createFileRoute("/relay")({
   head: () => ({
