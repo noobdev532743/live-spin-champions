@@ -6,6 +6,7 @@ import { ControlPanel } from "@/components/game/ControlPanel";
 import { EventTicker } from "@/components/game/EventTicker";
 import { PostGame } from "@/components/game/PostGame";
 import { SettingsPanel } from "@/components/game/SettingsPanel";
+import { EventBridge } from "@/components/game/EventBridge";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <div className="min-h-screen bg-gradient-sky pb-6">
+      <EventBridge />
       <div className="mx-auto max-w-md px-3 pt-3 space-y-3 relative">
         {/* Brand bar */}
         <header className="flex items-center justify-between">
