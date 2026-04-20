@@ -315,6 +315,8 @@ export function step(state: GameState, dt: number) {
           }
           a.lastHitTs = now;
           b.lastHitTs = now;
+          // spark at midpoint, intensity from impact power
+          addSpark(state, (a.x + b.x) / 2, (a.y + b.y) / 2, Math.min(1, power / 2.5), "puff");
         }
       }
     }
