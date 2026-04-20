@@ -141,24 +141,41 @@ function Relay() {
           <span />
         </header>
 
-        <section className="rounded-2xl bg-card p-4 shadow-clay space-y-3">
+        {/* TikFinity — primary, reliable path */}
+        <section className="rounded-2xl bg-card p-4 shadow-clay space-y-3 border-2 border-primary/40">
           <div className="flex items-center justify-between">
-            <h2 className="font-display font-bold">1. Your TikTok Live</h2>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              live.status === "live" ? "bg-mint" :
-              live.status === "connecting" ? "bg-sky animate-pulse" :
-              live.status === "error" ? "bg-destructive text-destructive-foreground" :
-              armed ? "bg-coral/40" : "bg-muted text-muted-foreground"
-            }`}>
-              {live.status === "live" ? `🟢 LIVE${live.viewerCount != null ? ` · ${live.viewerCount} 👁` : ""}` :
-               live.status === "connecting" ? "🔌 CONNECTING…" :
-               live.status === "error" ? "⚠ ERROR" :
-               armed ? "⏳ WAITING" : "⏸ IDLE"}
-            </span>
+            <h2 className="font-display font-bold">⭐ Cara utama: TikFinity (gratis, paling stabil)</h2>
           </div>
           <p className="text-xs text-muted-foreground">
-            Masukkan username TikTok kamu lalu tekan <b>Connect</b>. Begitu kamu mulai TikTok Live, semua <b>follow / like / share / gift</b> akan otomatis terbaca dan langsung spawn spinner di arena pakai foto profil viewer-nya.
+            TikFinity di-install di PC kamu, baca event TikTok Live langsung dari akunmu, lalu kirim ke game ini lewat webhook. <b>Tidak akan ditolak reCAPTCHA</b>, dan jalan otomatis selama TikFinity terbuka.
           </p>
+          <ol className="text-xs space-y-1.5 list-decimal pl-4">
+            <li>Download TikFinity dari <a href="https://tikfinity.zerody.one/" target="_blank" rel="noreferrer" className="underline font-bold text-primary">tikfinity.zerody.one</a> dan install di PC.</li>
+            <li>Buka TikFinity → login dengan TikTok kamu (<b>@{cleanUsername || "username_kamu"}</b>) → connect ke live-mu.</li>
+            <li>Di TikFinity buka <b>Custom Webhooks</b> (atau Integrations → Webhook) → <b>Add webhook</b>.</li>
+            <li>Tempel URL ini sebagai webhook target:</li>
+          </ol>
+          <code className="block text-[11px] bg-muted rounded-lg p-2 break-all font-mono select-all">{url || "loading…"}</code>
+          <ol className="text-xs space-y-1.5 list-decimal pl-4" start={5}>
+            <li>Aktifkan event: <b>Follow</b>, <b>Share</b>, <b>Like</b>, <b>Gift</b>.</li>
+            <li>Method: <b>POST</b>, Content-Type: <b>application/json</b>. Body bisa default — server kita auto-deteksi format TikFinity.</li>
+            <li>Tekan <b>Connect</b> di bawah — semua event TikTok Live kamu langsung spawn spinner di arena 🎉</li>
+          </ol>
+          <p className="text-[10px] text-muted-foreground">
+            Bisa juga pakai bridge lain (TikTokLive Node, EulerStream, dll) — selama mereka POST JSON ke URL di atas.
+          </p>
+        </section>
+
+        {/* Connect button + status */}
+        <section className="rounded-2xl bg-card p-4 shadow-clay space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-bold">Connect</h2>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              armed ? "bg-mint" : "bg-muted text-muted-foreground"
+            }`}>
+              {armed ? "🟢 LISTENING" : "⏸ IDLE"}
+            </span>
+          </div>
           <div className="flex gap-2">
             <div className="flex-1 flex items-center rounded-xl bg-muted px-3">
               <span className="text-muted-foreground text-sm font-mono">@</span>
@@ -171,11 +188,8 @@ function Relay() {
               />
             </div>
             {!armed ? (
-              <button
-                onClick={connect}
-                disabled={!cleanUsername}
-                className="rounded-xl bg-primary text-primary-foreground px-4 text-xs font-bold shadow-pop disabled:opacity-40"
-              >
+              <button onClick={connect} disabled={!cleanUsername}
+                className="rounded-xl bg-primary text-primary-foreground px-4 text-xs font-bold shadow-pop disabled:opacity-40">
                 Connect
               </button>
             ) : (
@@ -184,29 +198,37 @@ function Relay() {
               </button>
             )}
           </div>
-          {armed && live.status !== "live" && (
-            <p className="text-[10px] bg-coral/20 rounded-lg p-2">
-              ⏳ Menunggu kamu memulai TikTok Live di akun <b>@{cleanUsername}</b>. Begitu live mulai, status berubah jadi 🟢 LIVE dan event otomatis masuk.
-            </p>
-          )}
-          {live.status === "live" && (
+          {armed && (
             <p className="text-[10px] text-mint-foreground bg-mint/40 rounded-lg p-2">
-              ✅ Tersambung ke @{cleanUsername}. Follow / like / share / gift dari viewer langsung spawn spinner di arena 🎉
+              ✅ Listening untuk @{cleanUsername}. Event dari TikFinity webhook (atau auto-bridge) langsung spawn spinner.
             </p>
-          )}
-          {live.error && (
-            <p className="text-[10px] text-destructive">Bridge error: {live.error}</p>
           )}
         </section>
 
-        <section className="rounded-2xl bg-card p-4 shadow-clay space-y-2">
-          <h2 className="font-display font-bold">2. Webhook (opsional, untuk TikFinity)</h2>
-          <p className="text-xs text-muted-foreground">
-            Kalau auto-connect di atas terblokir, kamu bisa juga pakai TikFinity di PC dan arahkan webhook-nya ke URL ini:
+        {/* Auto-bridge — experimental */}
+        <section className="rounded-2xl bg-card p-4 shadow-clay space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-bold text-sm">🧪 Auto-bridge (eksperimental)</h2>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              live.status === "live" ? "bg-mint" :
+              live.status === "connecting" ? "bg-sky animate-pulse" :
+              live.status === "error" ? "bg-destructive text-destructive-foreground" :
+              armed ? "bg-coral/40" : "bg-muted text-muted-foreground"
+            }`}>
+              {live.status === "live" ? `🟢 LIVE${live.viewerCount != null ? ` · ${live.viewerCount}👁` : ""}` :
+               live.status === "connecting" ? "🔌 CONNECTING…" :
+               live.status === "error" ? "⚠ DITOLAK" :
+               armed ? "⏳ TRYING" : "⏸ OFF"}
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Browser mencoba konek langsung ke TikTok Live via bridge publik. <b>Sering ditolak reCAPTCHA</b> — kalau gagal, pakai TikFinity di atas.
           </p>
-          <code className="block text-[10px] bg-muted rounded-lg p-2 break-all font-mono">{url || "loading…"}</code>
-          <pre className="text-[10px] bg-muted rounded-lg p-2 overflow-x-auto font-mono whitespace-pre">{sample}</pre>
-          <p className="text-[10px] text-muted-foreground">Action yang didukung: <code>follow</code>, <code>share</code>, <code>like</code>, <code>gift</code></p>
+          {live.error && (
+            <p className="text-[10px] bg-destructive/10 text-destructive rounded-lg p-2">
+              ⚠ {live.error}
+            </p>
+          )}
         </section>
 
         <section className="rounded-2xl bg-card p-4 shadow-clay space-y-2">
