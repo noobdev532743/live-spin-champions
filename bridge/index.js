@@ -5,6 +5,17 @@
 // Default target URL: http://localhost:3000 (di-set lewat npm script).
 
 import { WebcastPushConnection } from "tiktok-live-connector";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+// Tiny .env loader — biar user bisa simpan TIKTOK_USERNAME di .env root.
+const envPath = resolve(process.cwd(), ".env");
+if (existsSync(envPath)) {
+  for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/i);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+  }
+}
 
 const USERNAME = (process.env.TIKTOK_USERNAME || "").replace(/^@/, "").trim();
 const TARGET   = process.env.TARGET_URL || "http://localhost:3000";
