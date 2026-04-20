@@ -76,9 +76,16 @@ export const useGame = create<GameStore>((set, get) => ({
   }),
   tick: (dt) => {
     const { state, queue } = get();
+    const hadQueue = queue.length > 0;
     for (const ev of queue) applyEvent(state, ev);
     step(state, dt);
-    set({ state: { ...state }, queue: [] });
+    // Create new array/object refs so zustand selectors detect changes
+    const next = { ...state };
+    if (hadQueue) {
+      next.events = [...state.events];
+      next.stats = { ...state.stats };
+    }
+    set({ state: next, queue: [] });
   },
   setDurationMinutes: (mins) => set((s) => {
     const ns = { ...s.state, duration: Math.max(30_000, Math.round(mins * 60_000)) };
